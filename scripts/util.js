@@ -3,8 +3,9 @@
 const fs = require("fs-extra")
 const path = require("path")
 const chalk = require("chalk")
+const glob = require("glob")
 
-const QUESTIONS_PATH = "./questions"
+const QUESTIONS_PATH = "./questions/**/**.md"
 
 const TAG_NAMES = {
   javascript: "JavaScript",
@@ -25,15 +26,25 @@ const attempt = (task, cb) => {
   }
 }
 
+const substringAfterLast  = (str, separator) => {
+  if (!str || str === "") {
+    return ""
+  }
+  if (str.indexOf(separator) === -1) {
+    return str
+  }
+  const fieldNameParts = str.split(separator)
+  return fieldNameParts ? fieldNameParts[fieldNameParts.length - 1] : ""
+}
+
 const readQuestions = () =>
   attempt("read questions", () =>
-    fs
-      .readdirSync(QUESTIONS_PATH)
-      .filter(f => !f.includes("eslint"))
-      .sort((a, b) => (a.toLowerCase() < b.toLowerCase() ? -1 : 1))
-      .reduce((acc, name) => {
+    glob.sync(QUESTIONS_PATH)
+      .sort((a, b) => (substringAfterLast(a, "/").toLowerCase() < substringAfterLast(b, "/").toLowerCase() ? -1 : 1))
+      .reduce((acc, file) => {
+        const name = substringAfterLast(file, "/")
         acc[name] = fs
-          .readFileSync(path.join(QUESTIONS_PATH, name), "utf8")
+          .readFileSync(file, "utf8")
           .replace(/\r\n/g, "\n")
         return acc
       }, {})
@@ -86,7 +97,6 @@ module.exports = {
   readQuestions,
   capitalize,
   getCodeBlocks,
-  QUESTIONS_PATH,
   TAG_NAMES,
   getSection,
   getFirstSection
